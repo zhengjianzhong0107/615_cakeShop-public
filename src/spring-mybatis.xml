@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans  
+                        http://www.springframework.org/schema/beans/spring-beans.xsd  
+                        http://www.springframework.org/schema/context  
+                        http://www.springframework.org/schema/context/spring-context.xsd  
+				        http://www.springframework.org/schema/tx
+				        http://www.springframework.org/schema/tx/spring-tx.xsd
+                        http://www.springframework.org/schema/mvc  
+                        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+	<!-- 配置注解扫描范围 -->
+	<context:component-scan base-package="com.service" />
+
+	<!-- 引用数据库配置文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+
+	<!-- 配置数据源 - 使用tomcat连接池 -->
+	<bean id="dataSource" class="org.apache.tomcat.jdbc.pool.DataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}" /><!-- 数据库驱动 -->
+		<property name="url" value="${jdbc.url}" /> <!-- 连接URL -->
+		<property name="username" value="${jdbc.username}" /> <!-- 数据库用户名 -->
+		<property name="password" value="${jdbc.password}" /> <!-- 数据库密码 -->
+		<!-- 连接池参数配置 -->
+		<property name="initialSize" value="1" /><!-- 连接器启动时创建的初始连接数。默认为10 -->
+		<property name="maxActive" value="5" /><!-- 同时能分配的活跃连接的最大数目。默认为100 -->
+		<property name="minIdle" value="1" /><!-- 空闲连接的最小数目。默认为 initialSize: 10 -->
+		<property name="maxIdle" value="5" /><!-- 空闲连接的最大数目。默认为 maxActive: 100 -->
+		<property name="testOnBorrow" value="true" /><!-- 从池中借出对象之前，是否对其进行验证。默认值为false。如果对象验证失败，将其从池中清除，再接着去借下一个。注意：为了让 true 值生效，validationQuery参数必须为非空字符串。为了实现更高效的验证，可以采用validationInterval -->
+		<property name="validationQuery" value="select 1" /><!-- 在将池中连接返回给调用者之前，用于验证这些连接的SQL 查询。如果指定该值，则该查询不必返回任何数据，只是不抛出SQLException 异常。默认为 null -->
+		<property name="validationInterval" value="30000" /><!-- 为避免过度验证而设定的频率时间值（以秒计）。最多以这种频率运行验证。如果连接应该进行验证，但却没能在此间隔时间内得到验证，则会重新对其进行验证。默认为30000（30秒） -->
+	</bean>
+
+	<!-- 配置MyBatis SqlSessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" /> 
+		<property name="mapperLocations" value="classpath:com/mapper/*.xml" /><!-- 兼容xml方式 -->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/><!-- 配置mybatis全局配置文件 --> 
+	</bean>
+	<!-- 配置Dao所在包 Mybatis会动态创建实现类 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+		<property name="basePackage" value="com.dao" /><!-- 兼容注解方式 -->
+	</bean>
+
+	<!-- 配置事务管理器 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>	
+	<!-- 使用注解定义事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+
+</beans>
